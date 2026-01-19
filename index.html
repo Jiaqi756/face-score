@@ -228,7 +228,7 @@
                 formData.append('image', selectedFile);
 
                 // 调用免费颜值分析接口 (感谢开源社区提供的接口)
-                const response = await fetch('https://api.oioweb.cn/api/face/score', {
+                const response = await fetch('https://api.muxiaoguo.cn/api/face_score', {
                     method: 'POST',
                     body: formData
                 });
@@ -294,4 +294,5 @@
         }
     </script>
 </body>
+
 </html>
