@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 关键设置：让网页适应手机屏幕，禁止缩放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI颜值评分 - 手机专享版</title>
+    <style>
+        /* --- 全局样式：适配手机 --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent; /* 去除手机点击高亮 */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+            /* 手机端流行的梦幻渐变背景 */
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 450px; /* 限制最大宽度，防止在平板上太丑 */
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px; /* 手机端喜欢大圆角 */
+            padding: 30px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        /* --- 标题区域 --- */
+        .header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* --- 图片预览区域 --- */
+        .preview-area {
+            margin-bottom: 25px;
+        }
+
+        #face-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%; /* 圆形头像 */
+            object-fit: cover;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none; /* 默认隐藏 */
+            margin: 0 auto;
+        }
+
+        /* --- 上传按钮：手机端要大、要显眼 --- */
+        .upload-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            border: none;
+            border-radius: 50px; /* 胶囊形状 */
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            transition: transform 0.1s;
+        }
+
+        .upload-btn:active {
+            transform: scale(0.98); /* 点击时缩小，模拟按压感 */
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* --- 分析按钮 --- */
+        .action-btn {
+            background: #fff;
+            color: #ff6b6b;
+            border: 2px solid #ff6b6b;
+            padding: 12px 40px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none; /* 默认隐藏，选图后显示 */
+        }
+
+        /* --- 结果展示卡片 --- */
+        .result-card {
+            margin-top: 25px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            display: none;
+            animation: popIn 0.5s;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .score-badge {
+            font-size: 60px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+            margin: 10px 0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 14px;
+            color: #555;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 8px;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #ffe0e0;
+            color: #ff6b6b;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+            margin-right: 5px;
+        }
+
+        .loading {
+            color: #999;
+            font-size: 14px;
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="header">
+            <h1>✨ AI 颜值分析测试</h1>
+            <p class="subtitle">上传一张正面照，测测你的颜值评分</p>
+        </div>
+
+        <!-- 图片预览 -->
+        <div class="preview-area">
+            <img id="face-preview" src="" alt="预览图">
+        </div>
+
+        <!-- 上传按钮 -->
+        <label for="file-input" class="upload-btn">📷 点击上传照片</label>
+        <input type="file" id="file-input" accept="image/*" onchange="handleFileSelect(event)">
+
+        <!-- 分析按钮 -->
+        <button class="action-btn" id="analyze-btn" onclick="analyzeFace()">开始颜值鉴定 🔍</button>
+
+        <div class="loading" id="loading-txt">AI 正在分析中... 请稍候</div>
+
+        <!-- 结果卡片 -->
+        <div class="result-card" id="result-area">
+            <!-- 结果会在这里动态生成 -->
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // 1. 处理图片选择
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            selectedFile = file;
+            
+            // 显示预览图
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('face-preview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                
+                // 显示分析按钮
+                document.getElementById('analyze-btn').style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 2. 核心分析逻辑
+        async function analyzeFace() {
+            if (!selectedFile) return;
+
+            const btn = document.getElementById('analyze-btn');
+            const loading = document.getElementById('loading-txt');
+            const resultArea = document.getElementById('result-area');
+
+            // UI状态切换：隐藏按钮，显示加载
+            btn.style.display = 'none';
+            loading.style.display = 'block';
+            resultArea.style.display = 'none';
+
+            try {
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+
+                // 调用免费颜值分析接口 (感谢开源社区提供的接口)
+                const response = await fetch('https://api.oioweb.cn/api/face/score', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                loading.style.display = 'none'; // 隐藏加载
+
+                if (data.code === 200 && data.data) {
+                    showResult(data.data);
+                } else {
+                    resultArea.style.display = 'block';
+                    resultArea.innerHTML = `<div style="color:red; font-size:14px; padding:20px;">😓 识别失败</div><div style="font-size:12px; color:#999; margin-top:10px;">请确保照片中包含清晰的正面人脸，且光线充足。</div>`;
+                }
+
+            } catch (error) {
+                loading.style.display = 'none';
+                resultArea.style.display = 'block';
+                resultArea.innerHTML = `<div style="color:#666; padding:20px;">网络开小差了，请稍后再试。</div>`;
+                console.error(error);
+            }
+        }
+
+        // 3. 渲染结果到页面
+        function showResult(data) {
+            const resultArea = document.getElementById('result-area');
+            
+            // 性别转换
+            const gender = data.sex === 'male' ? '帅气小哥' : '漂亮小姐姐';
+            // 生成一些趣味标签
+            let tags = '';
+            if(data.score >= 9) tags = '<span class="tag">绝世容颜</span><span class="tag">人群焦点</span>';
+            else if(data.score >= 7) tags = '<span class="tag">颜值担当</span><span class="tag">气质出众</span>';
+            else tags = '<span class="tag">清秀佳人</span><span class="tag">潜力股</span>';
+
+            const html = `
+                <div style="font-size:14px; color:#888;">您的综合评分</div>
+                <div class="score-badge">${data.score}</div>
+                <div style="font-size:16px; font-weight:bold; color:#333;">${data.comment || '五官端正'}</div>
+                
+                ${tags}
+
+                <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;"></div>
+
+                <div class="info-row">
+                    <span>👤 性别分析：</span>
+                    <span><b>${gender}</b></span>
+                </div>
+                <div class="info-row">
+                    <span>🎂 预估年龄：</span>
+                    <span>${data.age || '未知'} 岁</span>
+                </div>
+                <div class="info-row">
+                    <span>🔮 脸型特征：</span>
+                    <span>${data.face_shape || '标准脸型'}</span>
+                </div>
+                <div style="margin-top:15px; font-size:12px; color:#bbb;">
+                    * 本测试仅供娱乐，自信最美 ❤️
+                </div>
+            `;
+
+            resultArea.innerHTML = html;
+            resultArea.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
